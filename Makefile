@@ -8,7 +8,7 @@
 
 CC=clang
 CXX=clang++
-CXXFLAGS=-Wall -Werror -ggdb -O2
+CXXFLAGS=-Wall -Werror -ggdb -O3
 
 ALL=import
 SRC=cz2mysql.cpp

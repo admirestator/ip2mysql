@@ -3,6 +3,7 @@
 #include <sstream>
 #include <fstream>
 #include <vector>
+#include <list>
 #include <memory>
 #include <string>
 #include <stdexcept>
@@ -60,7 +61,7 @@ int main(int argc, char *argv[])
     register vector<IpAddr> ip_addr;
     vector<IpAddr>::iterator ip_addr_idx;
     
-    if (!open_file(ipdatain, "czutf8")) {
+    if (!open_file(ipdatain, "ipdb")) {
         throw runtime_error ("open ip library failed!");
     }
 
@@ -95,27 +96,51 @@ int main(int argc, char *argv[])
         cout << "++\t ipdata table created" << endl;
 
         register IpAddr tmpip;
-        for (total_ip = 0, ip_addr_idx = ip_addr.begin();
-             !ipdatain.eof(); ) {
-            ++total_ip;
-
             //read data from ip library 200 row/ one time
+        string line , word;
+        list<string> tmplist;
+        list<string>::iterator tmpidx;
+        
+        //tmpidx = tmplist.end(); 
+        while(getline(ipdatain,line)) {
+            ++total_ip;
+            istringstream stm(line);
             tmpip.id = total_ip;
-            ipdatain >> tmpip.ip1 >> tmpip.ip2
-                     >> tmpip.country >> tmpip.location;
-
-            if (tmpip.location == "CZ88.NET")
-                tmpip.location = "CC";
+            while (!stm.eof()) {
+                stm >> word;
+                tmplist.push_back(word);
+            }
+            tmpidx = tmplist.begin();
+            tmpip.ip1 = *tmpidx++;
+            tmpip.ip2 = *tmpidx++;
+            tmpip.country = *tmpidx++;
+            tmpip.location = *tmpidx++;
+            
+            while (++tmpidx != tmplist.end()) {
+                //cout << "%" << *tmpidx << "%"<< endl;
+                tmpip.location = tmpip.location + " " +  *tmpidx;
+                //cout << "@" << tmpip.location << "@" << endl;
+                tmpidx++;
+            }
+            /*
+              cout << "< [" << total_ip << "] " << tmpip.ip1 << " "
+                   << tmpip.ip2 << " " << tmpip.country << " "
+              << tmpip.location << ">\n";
+            */
             ip_addr.push_back(tmpip);
-
+            tmpip.location = "";
+            tmplist.clear();
+            
             //insert ip data into mysql 200 rows one time
             if (total_ip % 200 == 0) {
                 vector<IpAddr>::const_iterator
                     ip_addr_idxcst = ip_addr.begin();
-                sqlcmd.str("");
                 stringstream tmpcmd;
+
                 tmpcmd.str("");
+                //cout << "cc"<< endl;
                 for (int i = 0; i < BATNUM; ++ip_addr_idxcst, ++i) {
+                    //cout << "cd" << endl;
                     tmpcmd << "(\"" << ip_addr_idxcst->id << "\", \""
                            << ip_addr_idxcst->ip1 << "\", \""
                            << ip_addr_idxcst->ip2 << "\", \""
@@ -123,22 +148,32 @@ int main(int argc, char *argv[])
                            << "ccstate" << "\", \""
                            << "ccregion"<< "\", \""
                            << ip_addr_idxcst->location << "\"), ";
+                    /*
+                    cout  << "(\"" << ip_addr_idxcst->id << "\", \""
+                           << ip_addr_idxcst->ip1 << "\", \""
+                           << ip_addr_idxcst->ip2 << "\", \""
+                           << ip_addr_idxcst->country << "\", \""
+                           << "ccstate" << "\", \""
+                           << "ccregion"<< "\", \""
+                          << ip_addr_idxcst->location << "\"), "<< endl;
+                    */
                 }
+                //cout << "[tmpcmd] " << tmpcmd.str()  << endl;
                 //clear vector for new 200 ip info.
                 tmpcmd.seekp((int)tmpcmd.tellp()-2);
                 tmpcmd << " ";
+                sqlcmd.str("");
+                //cout << "cts" << endl;
                 sqlcmd << "INSERT INTO qqwry VALUES" + tmpcmd.str();
-                sleep(1);
                 //cout << "id[" << ip_addr_idxcst->id << "] sqlcmd: "
-                //<< sqlcmd.str() << endl;
+                // << sqlcmd.str() << endl;
                 stmt->execute(sqlcmd.str());
                 ip_addr.clear();
             }
         }
-    
         cout << "insert ip data into mysql success!" << endl;
+        
     } catch (sql::SQLException &e) {
-        /*
         cout << "# ERR: SQLException in " << __FILE__;
         cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
         cout << "# ERR: " << e.what();
@@ -154,7 +189,6 @@ int main(int argc, char *argv[])
         cout << "not ok 1 - examples/connect.php" << endl;
 
         return EXIT_FAILURE;
-        */
     }
     
 //close library

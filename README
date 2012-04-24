@@ -1,0 +1,13 @@
+1.About this program
+
+A simple tool to insert the CZ ip data to MySQL with c++.
+It's also complied by clang++ which a so powerful compiler.
+The CZ ip data library was in 4.20 version.
+
+2.Author
+Author:	admirestator <admirestator@gmail.com>
+First release at 2012.4.24.
+
+3.Licecse
+The ip data is copyright at CZ88.NET, and the source code was 
+release at the GPLv3.
